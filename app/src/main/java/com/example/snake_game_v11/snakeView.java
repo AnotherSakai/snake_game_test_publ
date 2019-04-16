@@ -8,34 +8,20 @@ import android.graphics.Point;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-
-import java.io.IOException;
 import java.util.Random;
 
 class SnakeView extends SurfaceView implements Runnable {
 
     private Thread m_Thread = null;
     private volatile boolean m_Playing;
-
     // То,на чем рисуем
     private Canvas m_Canvas;
-    // Это необходимо для Canvas и рисования
-    private SurfaceHolder m_Holder;
-    // Это позволяет контролировать нам цвета и т.д.
-    private Paint m_Paint;
-
     // Это будет отслыкой к Activity
     private Context m_context;
-
-
     // Для отслеживания движений m_Direction
     public enum Direction {UP, RIGHT, DOWN, LEFT}
     // Направление на старте
     private Direction m_Direction = Direction.RIGHT;
-
-    // Какое разрешение экрана
-    private int m_ScreenWidth;
-    private int m_ScreenHeight;
 
     // Контролируем паузы между обновлениями
     private long m_NextFrameTime;
@@ -43,50 +29,60 @@ class SnakeView extends SurfaceView implements Runnable {
     private final long FPS = 10;
     private final long MILLIS_IN_A_SECOND = 1000;
     // Мы будем рисовать картинку намного чаще
-
     // Текущий m_Score
     private int m_Score;
+    // Насколько длинная змейка в текущий момент
+    private int m_SnakeLength;
+    // Размер в сегментах играбельной зоны
+    private final int NUM_BLOCKS_WIDE = 40;
+    private int m_NumBlocksHigh; // определяется динамично
+
+    // Это необходимо для Canvas и рисования
+    private SurfaceHolder m_Holder;
+    // Это позволяет контролировать нам цвета и т.д.
+    private Paint m_Paint;
+  //todo Все переменные будем выписывать ниже
+
+    // Какое разрешение экрана
+    private int m_ScreenWidth;
+    private int m_ScreenHeight;
+
+    // Размер пикселей змейки
+    private int m_BlockSize;
+    // Где яблоко
+    private int m_AppleX;
+    private int m_AppleY;
+
 
     //Местонахождение на поле из всех сегментов
     private int[] m_SnakeXs;
     private int[] m_SnakeYs;
 
-    // Насколько длинная змейка в текущий момент
-    private int m_SnakeLength;
 
-    // Где яблоко
-    private int m_AppleX;
-    private int m_AppleY;
 
-    // Размер пикселей змейки
-    private int m_BlockSize;
 
-    // Размер в сегментах играбельной зоны
-    private final int NUM_BLOCKS_WIDE = 40;
-    private int m_NumBlocksHigh; // определяется динамично
-
+    //Дальше переменные будут ломать код
     public SnakeView(Context context, Point size) {
         super(context);
 
         m_context = context;
-
+        // todo Ищем размер экрана
+        //определяем размер
         m_ScreenWidth = size.x;
         m_ScreenHeight = size.y;
-
         //Определяем размер каждого блока/place на игровом поле
         m_BlockSize = m_ScreenWidth / NUM_BLOCKS_WIDE;
         // Сколько блоков одтнакового размера поместятся в высоту
         m_NumBlocksHigh = ((m_ScreenHeight)) / m_BlockSize;
 
-
+        // максимальный размер змейки
+        // Если вы набираете 200 вы вознаграждены достижением "крашнуть игру"
+        m_SnakeXs = new int[200];
+        m_SnakeYs = new int[200];
 
         // Инициализируем рисование
         m_Holder = getHolder();
         m_Paint = new Paint();
-
-        // Если вы набираете 200 вы вознаграждены достижением "крашнуть игру"
-        m_SnakeXs = new int[200];
-        m_SnakeYs = new int[200];
 
         // Начинаем игру
         startGame();
@@ -105,27 +101,27 @@ class SnakeView extends SurfaceView implements Runnable {
 
         }
     }
-
+    //todo Создаем яблоко
+    public void spawnApple() {
+        Random random = new Random();
+        m_AppleX = random.nextInt(NUM_BLOCKS_WIDE - 1) + 1;
+        m_AppleY = random.nextInt(m_NumBlocksHigh - 1) + 1;
+    }
     public void startGame() {
         // Задаем длину змейки и её стартовую позицию
         m_SnakeLength = 15;
         m_SnakeXs[0] = NUM_BLOCKS_WIDE / 2;
         m_SnakeYs[0] = m_NumBlocksHigh / 2;
 
+        //todo Вставляем метод появления яблока
         // И яблоко для съедения
         spawnApple();
 
         // обнуляем  m_Score
         m_Score = 0;
-
         m_NextFrameTime = System.currentTimeMillis();
     }
 
-    public void spawnApple() {
-        Random random = new Random();
-        m_AppleX = random.nextInt(NUM_BLOCKS_WIDE - 1) + 1;
-        m_AppleY = random.nextInt(m_NumBlocksHigh - 1) + 1;
-    }
 
     private void eatApple(){
 
@@ -139,16 +135,13 @@ class SnakeView extends SurfaceView implements Runnable {
     }
 
     private void moveSnake(){
-        // Движение тела
+        // проверка на возможность создать змейку
         for (int i = m_SnakeLength; i > 0; i--) {
 
             m_SnakeXs[i] = m_SnakeXs[i - 1];
             m_SnakeYs[i] = m_SnakeYs[i - 1];
-
-            // Не включаем голову ибо
-            // перед головой ничего нет
         }
-
+        //todo Метод поворота
         // Двигаем голову в подходящий m_Direction
         switch (m_Direction) {
             case UP:
@@ -194,25 +187,21 @@ class SnakeView extends SurfaceView implements Runnable {
         if (m_SnakeXs[0] == m_AppleX && m_SnakeYs[0] == m_AppleY) {
             eatApple();
         }
-
         moveSnake();
-
         if (detectDeath()) {
             //по новой
-
             startGame();
         }
     }
-
     public void drawGame() {
         // Готовимся рисовать
         if (m_Holder.getSurface().isValid()) {
             m_Canvas = m_Holder.lockCanvas();
-
+             //todo Балуемся цветами (потом)
             // Покрываем поле цветом
             m_Canvas.drawColor(Color.argb(255, 120, 197, 87));
 
-            // Выбираем цвет змейки и яблока
+            // Выбираем цвет змейки и яблока (и счета)
             m_Paint.setColor(Color.argb(255, 255, 255, 255));
 
             // Размер счета
@@ -272,7 +261,7 @@ class SnakeView extends SurfaceView implements Runnable {
         m_Thread = new Thread(this);
         m_Thread.start();
     }
-
+   //todo Пооврот змейки
     @Override
     public boolean onTouchEvent(MotionEvent motionEvent) {
 
@@ -281,19 +270,22 @@ class SnakeView extends SurfaceView implements Runnable {
                 if (motionEvent.getX() >= m_ScreenWidth / 2) {
                     switch(m_Direction){
                         case UP:
-                            m_Direction = Direction.RIGHT;
+                            m_Direction = Direction.RIGHT;//вправо
                             break;
                         case RIGHT:
-                            m_Direction = Direction.DOWN;
+                            m_Direction = Direction.DOWN;//вниз
                             break;
                         case DOWN:
-                            m_Direction = Direction.LEFT;
+                            m_Direction = Direction.LEFT;//влево
                             break;
                         case LEFT:
-                            m_Direction = Direction.UP;
+                            m_Direction = Direction.UP;//вверх
                             break;
                     }
-                } else {
+                }
+
+                   else {
+                    //todo Поворот против часовой
                     switch(m_Direction){
                         case UP:
                             m_Direction = Direction.LEFT;
