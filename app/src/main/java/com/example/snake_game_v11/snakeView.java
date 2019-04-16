@@ -80,7 +80,6 @@ class SnakeView extends SurfaceView implements Runnable {
         m_SnakeXs = new int[200];
         m_SnakeYs = new int[200];
 
-        // Инициализируем рисование
         m_Holder = getHolder();
         m_Paint = new Paint();
 
